@@ -1,0 +1,179 @@
+---
+title: "Regression Analysis Course Project"
+author: "Kevin Brock"
+date: "June 15, 2015"
+output: pdf_document
+---
+
+```{r, DataSetup, echo=FALSE, message=FALSE, comment=FALSE}
+library(knitr)
+
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, error=FALSE, message = FALSE)
+
+data(mtcars)
+
+library(ggplot2)
+
+fitall <- lm(mpg ~ ., data = mtcars)
+fitamwtqsec <- lm(mpg ~ am + wt + qsec, data = mtcars)
+fitmultamwtqsec <- lm(mpg ~ am * wt + qsec, data = mtcars)
+
+```
+
+```{r, Step, results="hide", echo=FALSE, message=FALSE, comment=FALSE}
+steppedfit <- step(fitall)
+```
+
+## Executive Summary
+
+Fuel efficiency, as reflected in the MPG rating for a vehicle is heavily influenced by weight of the vehicle, qsec (the 1/4 mile time for the vehicle), and transmission type.
+
+Manual transmissions do significantly affect the gas mileage of a vehicle, and reflect an increase of roughly `r round(fitmultamwtqsec$coef[2],2)` miles per gallon over automatic transmissions when other variables are accounted for.  However a manual transmission also increases the impact of weight on gas mileage.
+
+Code and figures are in the appendix.
+
+## Exploratory analysis
+
+A pairs plot (see appendix) shows that there are a number of variables which appear to be strongly correlated with mpg.  We will use this plot to refine our model selection later.  
+
+If we do a linear model fitting all of the data, none of the p-values meets the criteria for significance:
+
+```{r, FitAllPValues, results='markup'}
+summary(fitall)$coefficients[,4]
+```
+
+We are most likely overfitting hugely here.  If we take the three variables with the lowest p values, wt, am, and qsec, and fit them we get 
+
+```{r, FitAmWtQsecCoefficients, results='markup'}
+summary(fitamwtqsec)$coefficients
+```
+
+This looks pretty good, and it matches what we get if we run step() on the original fit.  However we should note that although qsec does not have much correlation with weight or transmission type, weight and transmission type have a correlation of `r round(cor(mtcars$wt, mtcars$am),3)`. (see information on stepped fit in the appendix)
+
+If we introduce an interaction term for weight and transmission type, we get 
+
+```{r, FinalFitCoefficients, results='markup'}
+summary(fitmultamwtqsec)$coefficients
+```
+
+as well as a higher adjusted $R^2$:
+
+```{r, R2Comparison, results='markup'}
+c("Without Interaction" = summary(fitamwtqsec)$adj.r.squared, 
+  "With am:wt Interaction" = summary(fitmultamwtqsec)$adj.r.squared) 
+```
+
+## Relative Transmission Efficiency
+
+When we look at the results for fitting weight, transmission type and qsec we see that the transmission type is statistically significant.
+
+An automatic transmission gets roughly `r round(fitmultamwtqsec$coef[2],2)` fewer miles to the gallon, other parameters being fixed, but weight of the vehicle has less effect with an automatic transmission.
+
+For a weight difference of > `r round(abs(fitmultamwtqsec$coef[2]/fitmultamwtqsec$coef[5]),3)` thousand pounds the additional penalty for weight with a manual transmission makes the automatic transmission more fuel efficient for the heavier vehicle.
+
+One possible reason for this is that judging the optimal time to shift becomes harder with larger vehicles, and so the automatic transmission becomes more efficient as weight increases.
+
+## Diagnostics and Confidence Intervals
+
+The dataset is very small, so we cannot expect our conclusions from this data set to apply very well to the full set of car models, but given the current data we have a confidence interval of:
+
+```{r, AMConfInterval, echo=FALSE, results='markup'}
+confint(fitmultamwtqsec, "am", level=0.95)
+```
+
+for the hypothesis that am has an effect on gas mileage, where the positive value reflects the increase in gas mileage for a manual transmission, and a confidence interval of:
+
+```{r, AMWTConfInterval, echo=FALSE, results='markup'}
+confint(fitmultamwtqsec, "am:wt", level=0.95)
+```
+
+For the interaction between weight and transmission type, where the negative value indicates an increased penalty for weight (mpg/1000lbs.).
+
+The residuals plot for our final model shows no significant issues (see Residual Plot in the appendix).  There are no clear patterns in the basic residuals vs. fitted values plot, the QQ plot shows that the standardized residuals are approximately normal, and the higest leveage points are generally within one sd of the fit.
+
+\newpage
+
+## Appendix: R Code
+
+### Data Setup
+
+Loading data and libraries:
+
+```{r, DataSetup, echo=TRUE, comment=FALSE, message=FALSE, eval=FALSE}
+```
+
+### Miscellaneous Code
+
+P-values for fit on all data:
+
+```{r, FitAllPValues,  echo=TRUE, comment=FALSE, message=FALSE, eval=FALSE}
+```
+
+Coefficients for fit on am + wt + qsec:
+
+```{r, FitAmWtQsecCoefficients,  echo=TRUE, comment=FALSE, message=FALSE, eval=FALSE}
+```
+
+Coefficients for final fit on am * wt + qsec:
+
+```{r, FinalFitCoefficients,  echo=TRUE, comment=FALSE, message=FALSE, eval=FALSE}
+```
+
+Comparison of $R^2$ values:
+
+```{r, R2Comparison,  echo=TRUE, comment=FALSE, message=FALSE, eval=FALSE}
+```
+
+Confidence interval for am coefficient:
+
+```{r, AMConfInterval,  echo=TRUE, comment=FALSE, message=FALSE, eval=FALSE}
+```
+
+Confidence interval for am:wt coefficient:
+
+```{r, AMWTConfInterval,   echo=TRUE, comment=FALSE, message=FALSE, eval=FALSE}
+```
+
+\newpage
+
+### Pairs Plot
+
+Pairs plot for initial exploration, with the lower panel showing the correlation between the pairs of variables and the upper panel showing a scatterplot of the relationships:
+
+```{r, PairsPlot, echo=TRUE, comment=FALSE, message=FALSE }
+
+panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...)
+{
+     usr <- par("usr"); on.exit(par(usr))
+     par(usr = c(0, 1, 0, 1))
+     r <- abs(cor(x, y))
+     txt <- format(c(r, 0.123456789), digits = digits)[1]
+     txt <- paste0(prefix, txt)
+     text(0.5, 0.5, txt)
+}
+
+pairs(mtcars, lower.panel = panel.cor)
+
+```
+
+\newpage
+
+### Step 
+
+Running step() against the full data set: 
+
+```{r, Step, echo=TRUE, message=FALSE, comment=FALSE, eval=FALSE}
+```
+
+```{r, echo=TRUE, results="markup"}
+summary(steppedfit)$coefficients
+```
+
+### Residual Plot
+
+Residuals plot for our final model:
+
+```{r, echo=TRUE, results='markup'}
+par(mfrow = c(2,2))
+plot(fitmultamwtqsec)
+```
