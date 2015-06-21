@@ -11,6 +11,7 @@ library(knitr)
 knitr::opts_chunk$set(echo=FALSE, warning=FALSE, error=FALSE, message = FALSE)
 
 data(mtcars)
+mtcars$am <- factor(mtcars$am, labels=c("automatic", "manual"))
 
 library(ggplot2)
 
@@ -48,7 +49,7 @@ we get
 summary(fitamwtqsec)$coefficients
 ```
 
-This looks pretty good, however we should note that although qsec does not have much correlation with weight or transmission type, weight and transmission type have a correlation of `r round(cor(mtcars$wt, mtcars$am),3)` (see the pairs figure in the appendix)
+This looks pretty good, however we should note that although qsec does not have much correlation with weight or transmission type, weight and transmission type have a correlation of `r round(cor(mtcars$wt, as.numeric(mtcars$am)),3)` (see the pairs figure in the appendix)
 
 If we introduce an interaction term for weight and transmission type, with 
 
@@ -63,8 +64,8 @@ summary(fitmultamwtqsec)$coefficients
 as well as a higher adjusted $R^2$:
 
 ```{r, R2Comparison, results='markup'}
-c("Without Interaction" = summary(fitamwtqsec)$adj.r.squared, 
-  "With am:wt Interaction" = summary(fitmultamwtqsec)$adj.r.squared) 
+c("am + wt" = summary(fitamwtqsec)$adj.r.squared, 
+  "am*wt" = summary(fitmultamwtqsec)$adj.r.squared) 
 ```
 
 ## Relative Transmission Efficiency
@@ -109,6 +110,10 @@ panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...)
 {
      usr <- par("usr"); on.exit(par(usr))
      par(usr = c(0, 1, 0, 1))
+     if(!is.numeric(x))
+         x <- as.numeric(x)
+     if(!is.numeric(y))
+         y <- as.numeric(y)
      r <- abs(cor(x, y))
      txt <- format(c(r, 0.123456789), digits = digits)[1]
      txt <- paste0(prefix, txt)
