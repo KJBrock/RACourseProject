@@ -26,11 +26,7 @@ steppedfit <- step(fitall)
 
 ## Executive Summary
 
-Fuel efficiency, as reflected in the MPG rating for a vehicle is heavily influenced by weight of the vehicle, qsec (the 1/4 mile time for the vehicle), and transmission type.
-
-Manual transmissions do significantly affect the gas mileage of a vehicle, and reflect an increase of roughly `r round(fitmultamwtqsec$coef[2],2)` miles per gallon over automatic transmissions when other variables are accounted for.  However a manual transmission also increases the impact of weight on gas mileage.
-
-Code and figures are in the appendix.
+Fuel efficiency, as reflected in the MPG rating for a vehicle is heavily influenced by weight of the vehicle, qsec (the 1/4 mile time for the vehicle), and transmission type.  Manual transmissions do significantly affect the gas mileage of a vehicle, and reflect an increase of roughly `r round(fitmultamwtqsec$coef[2],2)` miles per gallon over automatic transmissions when other variables are accounted for.  However a manual transmission also increases the impact of weight on gas mileage.  Figures are in the appendix, code can be found in the GitHub project at https://github.com/KJBrock/RACourseProject/blob/master/CourseProject.Rmd
 
 ## Exploratory analysis
 
@@ -42,15 +38,23 @@ If we do a linear model fitting all of the data, none of the p-values meets the 
 summary(fitall)$coefficients[,4]
 ```
 
-We are most likely overfitting hugely here.  If we take the three variables with the lowest p values, wt, am, and qsec, and fit them we get 
+We are most likely overfitting hugely here.  If we take the three variables with the lowest p values, wt, am, and qsec, and fit them with 
+
+> lm(mpg ~ am + wt + qsec, data=mtcars) 
+
+we get 
 
 ```{r, FitAmWtQsecCoefficients, results='markup'}
 summary(fitamwtqsec)$coefficients
 ```
 
-This looks pretty good, and it matches what we get if we run step() on the original fit.  However we should note that although qsec does not have much correlation with weight or transmission type, weight and transmission type have a correlation of `r round(cor(mtcars$wt, mtcars$am),3)`. (see information on stepped fit in the appendix)
+This looks pretty good, however we should note that although qsec does not have much correlation with weight or transmission type, weight and transmission type have a correlation of `r round(cor(mtcars$wt, mtcars$am),3)` (see the pairs figure in the appendix)
 
-If we introduce an interaction term for weight and transmission type, we get 
+If we introduce an interaction term for weight and transmission type, with 
+
+> lm(mpg ~ am*wt + qsec, data=mtcars) 
+
+we get 
 
 ```{r, FinalFitCoefficients, results='markup'}
 summary(fitmultamwtqsec)$coefficients
@@ -93,54 +97,13 @@ The residuals plot for our final model shows no significant issues (see Residual
 
 \newpage
 
-## Appendix: R Code
-
-### Data Setup
-
-Loading data and libraries:
-
-```{r, DataSetup, echo=TRUE, comment=FALSE, message=FALSE, eval=FALSE}
-```
-
-### Miscellaneous Code
-
-P-values for fit on all data:
-
-```{r, FitAllPValues,  echo=TRUE, comment=FALSE, message=FALSE, eval=FALSE}
-```
-
-Coefficients for fit on am + wt + qsec:
-
-```{r, FitAmWtQsecCoefficients,  echo=TRUE, comment=FALSE, message=FALSE, eval=FALSE}
-```
-
-Coefficients for final fit on am * wt + qsec:
-
-```{r, FinalFitCoefficients,  echo=TRUE, comment=FALSE, message=FALSE, eval=FALSE}
-```
-
-Comparison of $R^2$ values:
-
-```{r, R2Comparison,  echo=TRUE, comment=FALSE, message=FALSE, eval=FALSE}
-```
-
-Confidence interval for am coefficient:
-
-```{r, AMConfInterval,  echo=TRUE, comment=FALSE, message=FALSE, eval=FALSE}
-```
-
-Confidence interval for am:wt coefficient:
-
-```{r, AMWTConfInterval,   echo=TRUE, comment=FALSE, message=FALSE, eval=FALSE}
-```
-
-\newpage
+## Appendix: Figures
 
 ### Pairs Plot
 
 Pairs plot for initial exploration, with the lower panel showing the correlation between the pairs of variables and the upper panel showing a scatterplot of the relationships:
 
-```{r, PairsPlot, echo=TRUE, comment=FALSE, message=FALSE }
+```{r, PairsPlot, echo=FALSE, comment=FALSE, message=FALSE, results='markup' }
 
 panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...)
 {
@@ -158,22 +121,11 @@ pairs(mtcars, lower.panel = panel.cor)
 
 \newpage
 
-### Step 
-
-Running step() against the full data set: 
-
-```{r, Step, echo=TRUE, message=FALSE, comment=FALSE, eval=FALSE}
-```
-
-```{r, echo=TRUE, results="markup"}
-summary(steppedfit)$coefficients
-```
-
 ### Residual Plot
 
 Residuals plot for our final model:
 
-```{r, echo=TRUE, results='markup'}
+```{r, echo=FALSE, results='markup'}
 par(mfrow = c(2,2))
 plot(fitmultamwtqsec)
 ```
